@@ -2,7 +2,7 @@ import sqlalchemy
 import gcp_util.secret_manager as secret
 
 
-def init_tcp_connection_engine(db_config: dict, run_on_app_engine=False) -> sqlalchemy.engine.Engine or None:
+def init_tcp_connection_engine(db_config: dict, run_on_app_engine=True) -> sqlalchemy.engine.Engine or None:
     """
     Fetches secrets from the secret manager/secret dir (if running local) creates an sqlalchemy connection pool through
     the connection engine.

@@ -326,14 +326,14 @@ def put_bill_and_division_data_in_db(bills_overview):
                 print(f"division {division_title} already in MPVotes table")
 
 
-def upsert_bills_and_divisions_data(fresh=False, session="All"):
+def upsert_bills_and_divisions_data(fresh=False, session="All", to_run_on_app_engine=True):
     if fresh == True:
         os.remove("datetime_last_scraped.p")
         clear_table("MPVotes")
         clear_table("Bills")
 
     # TODO IMPORTANT UNCOMMENT THIS AND DELETE NEXT
-    bills_overview = blf.BillsOverview(run_on_app_engine=True, project_name="bills-app-305000", debug=True)
+    bills_overview = blf.BillsOverview(run_on_app_engine=to_run_on_app_engine, project_name="bills-app-305000", debug=True)
     #bills_overview = blf.BillsOverview(run_on_app_engine=False, project_name="bills-app-305000", debug=True)
     mock_datetime = datetime.datetime.now() - datetime.timedelta(days=7)
     bills_overview.mock_datetime_last_scraped(mock_datetime)
@@ -419,7 +419,7 @@ def insert_and_update_data(completely_fresh=False, day_frequency_for_party_and_m
         else:
             print("not a designated day to update MP and Party, or updating these has been disabled by parameter")
 
-        upsert_bills_and_divisions_data(fresh=False, session="All")
+        upsert_bills_and_divisions_data(fresh=False, session="All", to_run_on_app_engine=run_on_app_engine)
 
         print("finished inserting bills and divisions data")
 
