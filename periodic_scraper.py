@@ -333,8 +333,8 @@ def upsert_bills_and_divisions_data(fresh=False, session="All"):
         clear_table("Bills")
 
     # TODO IMPORTANT UNCOMMENT THIS AND DELETE NEXT
-    #bills_overview = blf.BillsOverview(run_on_app_engine=True, project_name="bills-app-305000", debug=True)
-    bills_overview = blf.BillsOverview(run_on_app_engine=False, project_name="bills-app-305000", debug=True)
+    bills_overview = blf.BillsOverview(run_on_app_engine=True, project_name="bills-app-305000", debug=True)
+    #bills_overview = blf.BillsOverview(run_on_app_engine=False, project_name="bills-app-305000", debug=True)
     mock_datetime = datetime.datetime.now() - datetime.timedelta(days=7)
     bills_overview.mock_datetime_last_scraped(mock_datetime)
     bills_overview.get_changed_bills_in_session(session_name=session)
