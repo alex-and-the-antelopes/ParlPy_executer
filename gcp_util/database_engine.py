@@ -2,17 +2,25 @@ import sqlalchemy
 import gcp_util.secret_manager as secret
 
 
-def init_tcp_connection_engine(db_config: dict) -> sqlalchemy.engine.Engine or None:
+def init_tcp_connection_engine(db_config: dict, run_on_app_engine=False) -> sqlalchemy.engine.Engine or None:
     """
-    Fetches secrets from the secret manager adn creates an sqlalchemy connection pool through
+    Fetches secrets from the secret manager/secret dir (if running local) creates an sqlalchemy connection pool through
     the connection engine.
     :param db_config: The configuration for the database
     :return: pool of database connections or None if failed to connect.
     """
-    db_user = secret.get_version("db_user")
-    db_pass = secret.get_version("db_pass")
-    db_name = secret.get_version("db_name")
-    db_host = secret.get_version("db_host")
+    if run_on_app_engine:
+        db_user = secret.get_version("db_user")
+        db_pass = secret.get_version("db_pass")
+        db_name = secret.get_version("db_name")
+        db_host = secret.get_version("db_host")
+    else:
+        with open("secrets/user_username") as f:
+            db_user = f.read()
+        with open("secrets/user_pass") as f:
+            db_pass = f.read()
+        db_host = "35.190.194.63:3306"
+        db_name = "bill_data"
 
     # Extract the host and port from db_host
     host_args = db_host.split(":")

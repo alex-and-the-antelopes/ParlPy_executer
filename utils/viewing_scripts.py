@@ -6,7 +6,7 @@ from mysql.connector.constants import ClientFlag
 
 # set these to the values for your Google Cloud SQL instance
 public_ip = "35.190.194.63"
-db_name = "bill_data"
+db_name = "bill_app_db"
 username = "mastergk"
 
 # secrets are stored in secrets dir

@@ -2,7 +2,6 @@ import parlpy.bills.bill_list_fetcher as blf
 import parlpy.bills.bill_details_iterator as bdi
 import parlpy.mps.mp_fetcher as mf
 import parlpy.mps.parties_fetcher as pf
-#import db_interactions as db_agent
 import gcp_util.database_engine as db_agent
 
 import os
@@ -13,8 +12,8 @@ import gcsfs
 
 # clear all rows and reset increment
 def clear_table(table_name):
-    db_agent.interact(f"DELETE FROM {db_name}.{table_name};")
-    db_agent.interact(f"ALTER TABLE {db_name}.{table_name} AUTO_INCREMENT = 1;")
+    db_agent.interact(f"DELETE FROM {table_name};")
+    db_agent.interact(f"ALTER TABLE {table_name} AUTO_INCREMENT = 1;")
 
 
 def clear_all_4_tables():
@@ -47,10 +46,10 @@ def execute_insert_mp_data_in_db(first_name, second_name, email, constituency, m
     else:
         current = 0
     print("current state of MP")
-    select_string = f"SELECT * FROM {db_name}.MP;"
+    select_string = f"SELECT * FROM MP;"
     rows = db_agent.select(select_string)
     print(rows)
-    insert_command_string = f"INSERT INTO {db_name}.MP (mpID, firstName, lastName, email, partyID, area, current) VALUES (\"{member_id}\",\"{first_name}\",\"{second_name}\",\"{email}\",{party_id},\"{constituency}\",\"{current}\");"
+    insert_command_string = f"INSERT INTO MP (mpID, firstName, lastName, email, partyID, area, current) VALUES ('{member_id}','{first_name}','{second_name}','{email}',{party_id},'{constituency}','{current}');"
 
     print(f"mp insert command string")
     print(insert_command_string)
@@ -84,13 +83,20 @@ def insert_mp_data():
 
 def is_in_field(table, field, val, type):
     if type == "string":
-        count_from_interaction = db_agent.select(f"SELECT COUNT(*) FROM {db_name}.{table} WHERE {field} = \"{val}\";")
+        count_from_interaction = db_agent.select(f"SELECT COUNT(*) FROM {table} WHERE {field} = '{val}';")
     elif type == "int":
-        count_from_interaction = db_agent.select(f"SELECT COUNT(*) FROM {db_name}.{table} WHERE {field} = {val};")
+        count_from_interaction = db_agent.select(f"SELECT COUNT(*) FROM {table} WHERE {field} = {val};")
     else:
         raise ValueError("unrecog type")
 
-    count = int(count_from_interaction[0])
+    print("in is_in_field")
+    print(count_from_interaction)
+    print(type(count_from_interaction))
+    print(count_from_interaction[0])
+    print(type(count_from_interaction[0]))
+    print(count_from_interaction[0][0])
+    print(type(count_from_interaction[0][0]))
+    count = count_from_interaction[0][0]
 
     if count > 0:
         return True
@@ -103,15 +109,15 @@ def execute_update_mp_data_in_db(first_name, second_name, email, constituency, m
         current = 1
     else:
         current = 0
-    update_command_string = f"UPDATE {db_name}.MP " \
-                            f"SET mpID = \"{member_id}\", " \
-                            f"firstName = \"{first_name}\", " \
-                            f"lastName = \"{second_name}\", " \
-                            f"email = \"{email}\", " \
+    update_command_string = f"UPDATE MP " \
+                            f"SET mpID = '{member_id}', " \
+                            f"firstName = '{first_name}', " \
+                            f"lastName = '{second_name}', " \
+                            f"email = '{email}', " \
                             f"partyID = {party_id}, " \
-                            f"area = \"{constituency}\", " \
+                            f"area = '{constituency}', " \
                             f"current = {current} " \
-                            f"WHERE mpID = {member_id}"
+                            f"WHERE mpID = {member_id};"
 
     print(f"mp update command string")
     print(update_command_string)
@@ -125,7 +131,7 @@ def upsert_mp_data():
     mp_fetcher = mf.MPOverview()
     print("created MPOverview obj")
 
-    # todo: uncomment and delete below
+    # todo: change this is this is initial local run
     mp_fetcher.get_all_members(params={"House": "Commons", "IsCurrentMember": "true"})
     all_mp_data = mp_fetcher.mp_overview_data
     print("fetched all mp data")
@@ -141,7 +147,7 @@ def upsert_mp_data():
 
 
 def execute_insert_party_data(party_id, party_name):
-    insert_command_string = f"INSERT INTO {db_name}.Party (partyID, partyName) VALUES (\"{party_id}\",\"{party_name}\");"
+    insert_command_string = f"INSERT INTO Party (partyID, partyName) VALUES ({party_id},'{party_name}');"
 
     print(f"party insert command string")
     print(insert_command_string)
@@ -170,7 +176,7 @@ def insert_party_data():
 
 
 def execute_update_party_data(party_id, party_name):
-    update_command_string = f"UPDATE {db_name}.Party SET partyName = \"{party_name}\" WHERE partyID = {party_id};"
+    update_command_string = f"UPDATE Party SET partyName = '{party_name}' WHERE partyID = {party_id};"
 
     db_agent.interact(update_command_string)
 
@@ -192,14 +198,10 @@ def upsert_party_data():
 def bill_id_in_bills_table(bill):
     bill_id = None
 
-    count_command_string = f"SELECT COUNT(*) FROM {db_name}.Bills WHERE titleStripped = \"{bill.title_stripped}\";"
+    count_command_string = f"SELECT COUNT(*) FROM Bills WHERE titleStripped = '{bill.title_stripped}';"
     count_from_interaction = db_agent.select(count_command_string)
 
-    print(f"type count from interaction: {type(count_from_interaction)}")
-    print(f"count from interaction: {count_from_interaction}")
-
-    # remove opening 2 brackets
-    count = int(count_from_interaction[0])
+    count = count_from_interaction[0][0]
 
     print(f"type count: {type(count)}")
     print(f"count: {count}")
@@ -208,12 +210,12 @@ def bill_id_in_bills_table(bill):
         if count > 1:
             raise Exception("billID must be unique, duplicates found")
 
-        select_bill_id_string = f"SELECT billID FROM {db_name}.Bills WHERE titleStripped = \"{bill.title_stripped}\";"
+        select_bill_id_string = f"SELECT billID FROM Bills WHERE titleStripped = '{bill.title_stripped}';"
         bill_id_from_interaction = db_agent.select(select_bill_id_string)
         print(f"type bill id interaction: {type(bill_id_from_interaction)}")
         print(f"bill id interaction: {bill_id_from_interaction}")
 
-        bill_id = int(bill_id_from_interaction[0])
+        bill_id = int(bill_id_from_interaction[0][0])
 
         print(f"bill_id: {bill_id}")
         print(f"bill_id type: {type(bill_id)}")
@@ -224,10 +226,19 @@ def bill_id_in_bills_table(bill):
 
 
 def division_in_mpvotes_table(division_name):
-    count_command_string = f"SELECT COUNT(*) FROM {db_name}.MPVotes WHERE title = \"{division_name}\";"
+    count_command_string = f"SELECT COUNT(*) FROM MPVotes WHERE title = '{division_name}';"
 
     count_from_interaction = db_agent.select(count_command_string)
-    count = int(count_from_interaction[0])
+
+    #print("in division_in_mpvotes_table")
+    #count = count_from_interaction[0]
+    #print(f"count after index: {count}")
+    #count = count[0]
+    #print(f"count after second index: {count}")
+    #print(f"count type after second index: {type(count)}")
+    #count = extract_first_string_from_db_interaction(count_from_interaction)
+    #count = int(count)
+    count = count_from_interaction[0][0]
 
     if count > 0:
         return True
@@ -246,11 +257,10 @@ def get_sessions_string(sessions):
 def execute_insert_new_bill_into_bills_table(bill):
     sessions_string = get_sessions_string(bill.sessions)
 
-    summary_sanitised = bill.summary.replace("\"", "")
+    summary_sanitised = bill.summary.replace("'", "")
 
     insertion_command_string \
-        = f"INSERT INTO {db_name}.Bills (titleStripped, billOrAct, dateAdded, shortDesc, sessions, link) " \
-          f"VALUES (\"{bill.title_stripped}\",\"{bill.title_postfix}\",\"{bill.last_updated.isoformat()}\",\"{summary_sanitised}\",\"{sessions_string}\",\"{bill.url}\");"
+        = f"INSERT INTO Bills (titleStripped, billOrAct, dateAdded, shortDesc, sessions, link) VALUES ('{bill.title_stripped}','{bill.title_postfix}','{bill.last_updated.isoformat()}','{summary_sanitised}','{sessions_string}','{bill.url}');"
 
     db_agent.interact(insertion_command_string)
 
@@ -259,18 +269,14 @@ def execute_update_bill(bill):
     sessions_string = get_sessions_string(bill.sessions)
 
     datetime_iso_string = bill.last_updated.isoformat()
-    print(f"dattime iso: {datetime_iso_string}")
+    print(f"datetime iso: {datetime_iso_string}")
 
-    update_command_string = f"UPDATE {db_name}.Bills " \
-                            f"SET " \
-                            f"billOrAct = \"{bill.title_postfix}\", " \
-                            f"dateAdded = \"{datetime_iso_string}\", " \
-                            f"shortDesc = \"{bill.summary}\", " \
-                            f"sessions = \"{sessions_string}\", " \
-                            f"link = \"{bill.url}\" " \
-                            f"WHERE titleStripped = \'{bill.title_stripped}\'"
+    print("row matching")
+    print(db_agent.select(f"SELECT * FROM Bills WHERE titleStripped = '{bill.title_stripped}';"))
+    update_command_string = f"UPDATE Bills SET billOrAct='{bill.title_postfix}', dateAdded='{datetime_iso_string}', shortDesc='{bill.summary}', sessions='{sessions_string}', link='{bill.url}' WHERE titleStripped='{bill.title_stripped}';"
 
-    db_agent.interact(update_command_string)
+
+
 
 
 def execute_insert_new_vote_into_mpvotes_table(division_title, stage, bill_id, mp_id, aye=True):
@@ -279,8 +285,8 @@ def execute_insert_new_vote_into_mpvotes_table(division_title, stage, bill_id, m
     else:
         positive = 0
 
-    insert_command_string = f"INSERT INTO {db_name}.MPVotes (positive, billID, mpID, stage, title)" \
-                            f"VALUES (\"{positive}\",\"{bill_id}\",\"{mp_id}\",\"{stage}\",\"{division_title}\");"
+    insert_command_string = f"INSERT INTO MPVotes (positive, billID, mpID, stage, title)" \
+                            f"VALUES ('{positive}','{bill_id}','{mp_id}','{stage}','{division_title}');"
 
     db_agent.interact(insert_command_string)
 
@@ -289,6 +295,8 @@ def put_bill_and_division_data_in_db(bills_overview):
     for bill in bdi.get_bill_details(bills_overview):
         # get the billID from DB
         bill_id = bill_id_in_bills_table(bill)
+        print("bill ID")
+        print(bill_id)
         # if there is no billID, then the bill is not in the table, hence we need to insert the bill
         if bill_id is None:
             print(f"bill {bill.title_stripped} not yet in Bills table")
@@ -296,11 +304,11 @@ def put_bill_and_division_data_in_db(bills_overview):
             bill_id = bill_id_in_bills_table(bill)
         else:
             print(f"bill {bill.title_stripped} already in Bills table")
-            row_before_op = db_agent.select(f"SELECT * FROM {db_name}.Bills WHERE titleStripped = \"{bill.title_stripped}\";")
+            row_before_op = db_agent.select(f"SELECT * FROM Bills WHERE titleStripped = '{bill.title_stripped}';")
             print(f"row before: {row_before_op}")
             execute_update_bill(bill)
             row_after_op = db_agent.select(
-                f"SELECT * FROM {db_name}.Bills WHERE titleStripped = \"{bill.title_stripped}\";")
+                f"SELECT * FROM Bills WHERE titleStripped = '{bill.title_stripped}';")
             print(f"row after: {row_after_op}")
 
         for division in bill.divisions_list:
@@ -323,12 +331,15 @@ def upsert_bills_and_divisions_data(fresh=False, session="All"):
         clear_table("MPVotes")
         clear_table("Bills")
 
-
-    bills_overview = blf.BillsOverview(run_on_app_engine=True, project_name="bills-app-305000", debug=True)
+    # TODO IMPORTANT UNCOMMENT THIS AND DELETE NEXT
+    #bills_overview = blf.BillsOverview(run_on_app_engine=True, project_name="bills-app-305000", debug=True)
+    bills_overview = blf.BillsOverview(run_on_app_engine=False, project_name="bills-app-305000", debug=True)
+    mock_datetime = datetime.datetime.now() - datetime.timedelta(days=7)
+    bills_overview.mock_datetime_last_scraped(mock_datetime)
     bills_overview.get_changed_bills_in_session(session_name=session)
 
     filename = datetime.datetime.now().isoformat() + "_bills_overview"
-    write_to_log_file(bills_overview.bills_overview_data.to_string(), filename)
+    #write_to_log_file(bills_overview.bills_overview_data.to_string(), filename)
 
     # insert everything back in
     put_bill_and_division_data_in_db(bills_overview)
@@ -369,8 +380,18 @@ def write_to_log_file(message, log_filename):
         handle.write(encoded_message)
 
 
+def extract_first_string_from_db_interaction(interaction_string):
+    # remove opening 2 brackets
+    extracted_result = interaction_string[2:]
+    # remove closing 2 brackets
+    extracted_result = extracted_result[:-2]
+    extracted_result = extracted_result.split(",", maxsplit=1)[0]
+
+    return extracted_result
+
+
 # by default assumes running on app engine
-def insert_and_update_data(completely_fresh=False, day_frequency_for_party_and_mp_data=7, allow_party_and_mp_upsert=True, run_on_app_engine=True, project_name="bills-app-305000"):
+def insert_and_update_data(completely_fresh=False, day_frequency_for_party_and_mp_data=7, allow_party_and_mp_upsert=True, run_on_app_engine=True, project_name="bills-app-305000", force_party_and_mp_upsert=False):
     global db_name
     db_name = "bill_data"
 
@@ -390,7 +411,7 @@ def insert_and_update_data(completely_fresh=False, day_frequency_for_party_and_m
         # update MPs and parties ~every 5 days by default
         # this is not possible from google app engine as app engine times out
 
-        if datetime.datetime.now().day % day_frequency_for_party_and_mp_data == 0 and allow_party_and_mp_upsert:
+        if (datetime.datetime.now().day % day_frequency_for_party_and_mp_data == 0 and allow_party_and_mp_upsert) or force_party_and_mp_upsert:
             upsert_party_data()
             upsert_mp_data()
             print("finished updating MP and Party table")
@@ -402,9 +423,9 @@ def insert_and_update_data(completely_fresh=False, day_frequency_for_party_and_m
         print("finished inserting bills and divisions data")
 
 
-
+# for running locally, initial insert
 if __name__ == "__main__":
-    insert_and_update_data(run_on_app_engine=False, allow_party_and_mp_upsert=False)
+    insert_and_update_data(run_on_app_engine=False, allow_party_and_mp_upsert=True, force_party_and_mp_upsert=True)
 
 
 
