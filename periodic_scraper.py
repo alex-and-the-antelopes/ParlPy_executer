@@ -2,6 +2,7 @@ import parlpy.bills.bill_list_fetcher as blf
 import parlpy.bills.bill_details_iterator as bdi
 import parlpy.mps.mp_fetcher as mf
 import parlpy.mps.parties_fetcher as pf
+#import db_interactions as db_agent
 import gcp_util.database_engine as db_agent
 
 import os
@@ -131,7 +132,7 @@ def upsert_mp_data():
     mp_fetcher = mf.MPOverview()
     print("created MPOverview obj")
 
-    # todo: change this is this is initial local run
+    # todo: uncomment and delete below
     mp_fetcher.get_all_members(params={"House": "Commons", "IsCurrentMember": "true"})
     all_mp_data = mp_fetcher.mp_overview_data
     print("fetched all mp data")
@@ -391,7 +392,7 @@ def extract_first_string_from_db_interaction(interaction_string):
 
 
 # by default assumes running on app engine
-def insert_and_update_data(completely_fresh=False, day_frequency_for_party_and_mp_data=7, allow_party_and_mp_upsert=True, run_on_app_engine=True, project_name="bills-app-305000", force_party_and_mp_upsert=False):
+def insert_and_update_data(completely_fresh=False, day_frequency_for_party_and_mp_data=7, allow_party_and_mp_upsert=True, run_on_app_engine=True, project_name="bills-app-305000"):
     global db_name
     db_name = "bill_data"
 
@@ -411,7 +412,7 @@ def insert_and_update_data(completely_fresh=False, day_frequency_for_party_and_m
         # update MPs and parties ~every 5 days by default
         # this is not possible from google app engine as app engine times out
 
-        if (datetime.datetime.now().day % day_frequency_for_party_and_mp_data == 0 and allow_party_and_mp_upsert) or force_party_and_mp_upsert:
+        if datetime.datetime.now().day % day_frequency_for_party_and_mp_data == 0 and allow_party_and_mp_upsert:
             upsert_party_data()
             upsert_mp_data()
             print("finished updating MP and Party table")
@@ -423,9 +424,9 @@ def insert_and_update_data(completely_fresh=False, day_frequency_for_party_and_m
         print("finished inserting bills and divisions data")
 
 
-# for running locally, initial insert
+
 if __name__ == "__main__":
-    insert_and_update_data(run_on_app_engine=False, allow_party_and_mp_upsert=True, force_party_and_mp_upsert=True)
+    insert_and_update_data(run_on_app_engine=False, allow_party_and_mp_upsert=False)
 
 
 
