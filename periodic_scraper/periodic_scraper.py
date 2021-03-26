@@ -317,7 +317,7 @@ def put_bill_and_division_data_in_db(bills_overview):
                 print(f"division {division_title} already in MPVotes table")
 
 
-def upsert_bills_and_divisions_data(fresh=False, session="2019-21"):
+def upsert_bills_and_divisions_data(fresh=False, session="All"):
     if fresh == True:
         os.remove("datetime_last_scraped.p")
         clear_table("MPVotes")
