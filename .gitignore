@@ -5,15 +5,13 @@
 __pycache__/
 
 # ignore certs, password
-periodic_scraper/secrets
+secrets/
 
 # ignore pycharm project settings
 .idea
 
-# ignore pickle file in periodic_scraper
-periodic_scraper/*.p
+# ignore pickle file for time last scraped
+*.p
 
 # ignore pipfile, app engine doesnt like these
 Pipfile*
-
-secrets/
